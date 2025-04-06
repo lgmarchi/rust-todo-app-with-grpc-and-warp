@@ -52,4 +52,36 @@ impl TodoService for MyTodoService {
             todos: todos.into_iter().map(|todo| todo.into()).collect(),
         }))
     }
+
+    async fn update_todo(
+        &self,
+        request: tonic::Request<todo::UpdateTodoRequest>,
+    ) -> Result<tonic::Response<todo::Todo>, tonic::Status> {
+        let req = request.into_inner();
+        if req.id.is_none() {
+            return Err(tonic::Status::invalid_argument("id is required"));
+        }
+
+        let todo = db::update_todo(
+            &self.pool,
+            req.id.unwrap(),
+            &req.title,
+            req.completed,
+        )
+        .await;
+
+        Ok(tonic::Response::new(todo.into()))
+    }
+    async fn delete_todo(
+        &self,
+        request: tonic::Request<todo::DeleteTodoRequest>,
+    ) -> Result<tonic::Response<todo::Empty>, tonic::Status> {
+        let req = request.into_inner();
+        if req.id.is_none() {
+            return Err(tonic::Status::invalid_argument("id is required"));
+        }
+        db::delete_todo(&self.pool, req.id.unwrap()).await;
+
+        Ok(tonic::Response::new(todo::Empty {}))
+    }
 }
