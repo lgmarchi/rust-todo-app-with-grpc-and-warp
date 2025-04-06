@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use serde::Deserialize;
 use todo::todo_service_client::TodoServiceClient;
 use tonic::transport::Channel;
-use warp::{reject::Rejection, reply::Reply};
+use warp::{Filter, reject::Rejection, reply::Reply};
 
 mod todo {
     tonic::include_proto!("todo");
@@ -26,8 +26,59 @@ struct UpdateTodoForm {
     completed: String,
 }
 
-fn main() {
-    println!("Hello, world!");
+#[tokio::main]
+async fn main() {
+    let channel = Channel::from_static("http://[::1]:50051")
+        .connect()
+        .await
+        .expect("Failed to connect to gRPC server");
+    let todo_client = TodoServiceClient::new(channel);
+
+    let state = AppState { todo_client };
+    let state_filter = warp::any().map(move || state.clone());
+
+    let index = warp::path::end()
+        .and(warp::get())
+        .map(|| warp::reply::html(include_str!("index.html")));
+
+    let get_todos = warp::path("todos")
+        .and(warp::get())
+        .and(state_filter.clone())
+        .and_then(get_todos_handler);
+
+    let create_todo = warp::path("todos")
+        .and(warp::post())
+        .and(state_filter.clone())
+        .and(warp::body::form())
+        .and_then(create_todo_handler);
+
+    let update_todo = warp::path("todos")
+        .and(warp::put())
+        .and(state_filter.clone())
+        .and(warp::path::param::<i64>())
+        .and(warp::body::form())
+        .and_then(update_todo_handler);
+
+    // let update_todo = warp::path("todos" / i64)
+    //     .and(warp::put())
+    //     .and(state_filter.clone())
+    //     .and(warp::body::form())
+    //     .and_then(update_todo_handler);
+
+    let delete_todo = warp::path("todos")
+        .and(warp::delete())
+        .and(state_filter.clone())
+        .and(warp::path::param::<i64>())
+        .and_then(delete_todo_handler);
+
+    let router = index
+        .or(get_todos)
+        .or(create_todo)
+        .or(update_todo)
+        .or(delete_todo)
+        .with(warp::cors().allow_any_origin());
+
+    warp::serve(router).run(([127, 0, 0, 1], 3030)).await;
 }
 
 async fn get_todos_handler(state: AppState) -> Result<impl Reply, Rejection> {
@@ -71,10 +122,8 @@ async fn update_todo_handler(
     let title = form.extra.get(&title_key).cloned().unwrap_or_else(|| {
         form.extra.get("title").cloned().unwrap_or_default()
     });
-    let completed = match form.completed.to_lowercase().as_str() {
-        "true" | "on" => true,
-        _ => false,
-    };
+    let completed =
+        matches!(form.completed.to_lowercase().as_str(), "true" | "on");
 
     let request = tonic::Request::new(todo::UpdateTodoRequest {
         id: Some(id),
@@ -99,7 +148,7 @@ async fn delete_todo_handler(
     let mut client = state.todo_client;
     let request = tonic::Request::new(todo::DeleteTodoRequest { id: Some(id) });
 
-    let response = client.delete_todo(request).await.map_err(|e| {
+    let _ = client.delete_todo(request).await.map_err(|e| {
         eprintln!("Error calling delete_todo: {:?}", e);
         warp::reject::not_found()
     })?;
