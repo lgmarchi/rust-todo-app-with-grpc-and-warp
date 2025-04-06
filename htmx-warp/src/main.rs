@@ -104,9 +104,7 @@ async fn delete_todo_handler(
         warp::reject::not_found()
     })?;
 
-    let todo = response.into_inner();
-
-    Ok(warp::reply::html(render_todo_item(&todo)))
+    Ok(warp::reply::html(""))
 }
 
 fn render_todo_list(todos: &[todo::Todo]) -> String {
