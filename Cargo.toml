@@ -1,5 +1,5 @@
 [workspace]
-members = [".", "grpc-todo"]
+members = [".", "grpc-todo", "htmx-warp"]
 
 resolver = "2"
 

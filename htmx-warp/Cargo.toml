@@ -1,0 +1,24 @@
+[package]
+name = "htmx-warp"
+edition.workspace = true
+version.workspace = true
+
+[dependencies]
+# tokio: A runtime for asynchronous programming in Rust, providing an event loop, task scheduler, and utilities for async I/O.
+tokio = { workspace = true }
+# warp: A web framework for building HTTP-based services, designed for ease of use and performance.
+warp = { workspace = true }
+# tonic: A gRPC implementation for Rust, enabling the creation of gRPC clients and servers.
+tonic = { workspace = true }
+# prost: A Protocol Buffers implementation for Rust, used for serializing and deserializing structured data.
+prost = { workspace = true }
+# htmx: A library for working with HTMX, a tool for building modern web applications with minimal JavaScript.
+htmx = { workspace = true }
+# serde: A framework for serializing and deserializing Rust data structures efficiently and generically.
+serde = { workspace = true }
+# html-escape: A library for escaping and unescaping HTML entities in strings.
+html-escape = { workspace = true }
+
+[build-dependencies]
+# tonic-build: A companion crate for tonic, used to generate Rust code from Protocol Buffers definitions during the build process.
+tonic-build = { workspace = true }
