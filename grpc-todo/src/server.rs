@@ -1,4 +1,4 @@
-use todo::todo_service_server::TodoService;
+use todo::todo_service_server::{TodoService, TodoServiceServer};
 use tonic::Request;
 
 use crate::db;
@@ -84,4 +84,29 @@ impl TodoService for MyTodoService {
 
         Ok(tonic::Response::new(todo::Empty {}))
     }
+}
+
+pub async fn run_server() {
+    let pool = db::init_db().await;
+
+    let addr = "[::1]:50051".parse().unwrap();
+    let todo_service = MyTodoService { pool };
+
+    let cors = tower_http::cors::CorsLayer::new()
+        .allow_origin(tower_http::cors::Any)
+        .allow_methods(tower_http::cors::Any)
+        .allow_headers(tower_http::cors::Any);
+
+    println!("Server listening on {}", addr);
+
+    let grpc_web_service =
+        tonic_web::enable(TodoServiceServer::new(todo_service));
+
+    tonic::transport::Server::builder()
+        .accept_http1(true)
+        .layer(cors)
+        .add_service(grpc_web_service)
+        .serve(addr)
+        .await
+        .unwrap();
 }
