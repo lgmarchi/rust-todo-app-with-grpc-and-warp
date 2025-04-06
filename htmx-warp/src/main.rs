@@ -43,6 +43,72 @@ async fn get_todos_handler(state: AppState) -> Result<impl Reply, Rejection> {
     Ok(warp::reply::html(render_todo_list(&todos)))
 }
 
+async fn create_todo_handler(
+    state: AppState,
+    form: CreateTodoForm,
+) -> Result<impl Reply, Rejection> {
+    let mut client = state.todo_client;
+    let request =
+        tonic::Request::new(todo::CreateTodoRequest { title: form.title });
+    let response = client.create_todo(request).await.map_err(|e| {
+        eprintln!("Error calling create_todo: {:?}", e);
+        warp::reject::not_found()
+    })?;
+
+    let todo = response.into_inner();
+
+    Ok(warp::reply::html(render_todo_item(&todo)))
+}
+
+async fn update_todo_handler(
+    state: AppState,
+    id: i64,
+    form: UpdateTodoForm,
+) -> Result<impl Reply, Rejection> {
+    let mut client = state.todo_client;
+
+    let title_key = format!("title-{}", id);
+    let title = form.extra.get(&title_key).cloned().unwrap_or_else(|| {
+        form.extra.get("title").cloned().unwrap_or_default()
+    });
+    let completed = match form.completed.to_lowercase().as_str() {
+        "true" | "on" => true,
+        _ => false,
+    };
+
+    let request = tonic::Request::new(todo::UpdateTodoRequest {
+        id: Some(id),
+        title,
+        completed,
+    });
+
+    let response = client.update_todo(request).await.map_err(|e| {
+        eprintln!("Error calling update_todo: {:?}", e);
+        warp::reject::not_found()
+    })?;
+
+    let todo = response.into_inner();
+
+    Ok(warp::reply::html(render_todo_item(&todo)))
+}
+
+async fn delete_todo_handler(
+    state: AppState,
+    id: i64,
+) -> Result<impl Reply, Rejection> {
+    let mut client = state.todo_client;
+    let request = tonic::Request::new(todo::DeleteTodoRequest { id: Some(id) });
+
+    let response = client.delete_todo(request).await.map_err(|e| {
+        eprintln!("Error calling delete_todo: {:?}", e);
+        warp::reject::not_found()
+    })?;
+
+    let todo = response.into_inner();
+
+    Ok(warp::reply::html(render_todo_item(&todo)))
+}
+
 fn render_todo_list(todos: &[todo::Todo]) -> String {
     let mut html = String::new();
     for todo in todos {
