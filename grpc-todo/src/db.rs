@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
-use sqlx::{Sqlite, migrate::MigrateDatabase};
+use sqlx::{migrate::MigrateDatabase, Pool, Sqlite};
+
+use crate::config;
 
 #[derive(Debug, Serialize, Deserialize, sqlx::FromRow)]
 pub struct Todo {
@@ -55,7 +57,7 @@ pub async fn init_db() -> Pool<Sqlite> {
     pool
 }
 
-pub async fn create_todos(pool: &Pool<Sqlite>, title: &str) -> Todo {
+pub async fn create_todo(pool: &Pool<Sqlite>, title: &str) -> Todo {
    sqlx::query_as::<_, Todo>(
         "INSERT INTO todos (title, completed) VALUES (?, ?) RETURNING id, title, completed",
     
@@ -64,6 +66,15 @@ pub async fn create_todos(pool: &Pool<Sqlite>, title: &str) -> Todo {
     .fetch_one(pool)
     .await
     .expect("Failed to insert todo")
+}
+
+pub async fn get_todos(pool: &Pool<Sqlite>) -> Vec<Todo> {
+    sqlx::query_as::<_, Todo>(
+        "SELECT * FROM todos",
+    )
+    .fetch_all(pool)
+    .await
+    .expect("Failed to fetch todos")
 }
 
 pub async fn get_todo(pool: &Pool<Sqlite>, id: i64) -> Todo {
@@ -89,12 +100,12 @@ pub async fn update_todo(pool: &Pool<Sqlite>, id: i64, title: &str, completed: b
     .expect("Failed to update todo")
 }
 
-pub async fn delete_todo(pool: &Pool<Sqlite>, id: i64) -> Todo {
+pub async fn delete_todo(pool: &Pool<Sqlite>, id: i64)  {
     sqlx::query_as::<_, Todo>(
         "DELETE FROM todos WHERE id = ? RETURNING id, title, completed",
     )
     .bind(id)
     .fetch_one(pool)
     .await
-    .expect("Failed to delete todo")
+    .expect("Failed to delete todo");
 }
