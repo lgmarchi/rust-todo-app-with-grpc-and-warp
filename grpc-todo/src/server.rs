@@ -89,7 +89,7 @@ impl TodoService for MyTodoService {
 pub async fn run_server() {
     let pool = db::init_db().await;
 
-    let addr = "[::1]:50051".parse().unwrap();
+    let addr = "[::]:50051".parse().unwrap();
     let todo_service = MyTodoService { pool };
 
     let cors = tower_http::cors::CorsLayer::new()

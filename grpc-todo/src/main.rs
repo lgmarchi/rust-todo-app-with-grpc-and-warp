@@ -6,6 +6,6 @@ mod server;
 
 #[tokio::main]
 async fn main() {
+    dotenv::dotenv().ok();
     run_server().await;
-    println!("Hello, world!");
 }

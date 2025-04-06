@@ -30,17 +30,17 @@ pub async fn init_db() -> Pool<Sqlite> {
         println!("Database already exists at {}", config.database_url);
     }
 
-    /// This function is used to create a new database connection pool
+    // This function is used to create a new database connection pool
     let pool = sqlx::SqlitePool::connect(&config.database_url)
         .await
         .expect("Failed to connect to the database");
 
-    /// This function is used to run the database migrations
-    /// It is used to create the database schema and tables
-    /// It is a wrapper around the sqlx::migrate::run function
+    // This function is used to run the database migrations
+    // It is used to create the database schema and tables
+    // It is a wrapper around the sqlx::migrate::run function
     let crate_dir = std::env::var("CARGO_MANIFEST_DIR").unwrap();
 
-    /// This function is used to run the database migrations
+    // This function is used to run the database migrations
     let migration = std::path::Path::new(&crate_dir).join("./migrations");
 
     let migration_results = sqlx::migrate::Migrator::new(migration)
@@ -77,16 +77,15 @@ pub async fn get_todos(pool: &Pool<Sqlite>) -> Vec<Todo> {
     .expect("Failed to fetch todos")
 }
 
-pub async fn get_todo(pool: &Pool<Sqlite>, id: i64) -> Todo {
-    sqlx::query_as::<_, Todo>(
-        "SELECT * FROM todos WHERE id = ?",
-    )
-    .bind(id)
-    .fetch_one(pool)
-    .await
-    .expect("Failed to fetch todo")
-}
-
+// pub async fn get_todo(pool: &Pool<Sqlite>, id: i64) -> Todo {
+//     sqlx::query_as::<_, Todo>(
+//         "SELECT * FROM todos WHERE id = ?",
+//     )
+//     .bind(id)
+//     .fetch_one(pool)
+//     .await
+//     .expect("Failed to fetch todo")
+// }
 
 pub async fn update_todo(pool: &Pool<Sqlite>, id: i64, title: &str, completed: bool) -> Todo {
     sqlx::query_as::<_, Todo>(

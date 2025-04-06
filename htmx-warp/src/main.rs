@@ -32,6 +32,7 @@ async fn main() {
         .connect()
         .await
         .expect("Failed to connect to gRPC server");
+
     let todo_client = TodoServiceClient::new(channel);
 
     let state = AppState { todo_client };

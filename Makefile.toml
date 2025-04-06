@@ -1,0 +1,15 @@
+[tasks.grpc-todo]
+command = "cargo"
+args = ["run", "-p", "grpc-todo"]
+
+[tasks.htmx-warp]
+script = [
+    # Wait grpc-todo to be ready
+    "echo 'Waiting for backend grpc-todo...' ",
+    "until nc -z 127.0.0.1 50051; do sleep 0.5; done",
+    "echo 'Backend ready, starting htmx-warp on http://localhost:3030'",
+    "cargo run -p htmx-warp",
+]
+
+[tasks.run-both]
+run_task = { name = ["grpc-todo", "htmx-warp"], parallel = true }
