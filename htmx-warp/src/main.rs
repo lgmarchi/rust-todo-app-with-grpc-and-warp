@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use serde::Deserialize;
 use todo::todo_service_client::TodoServiceClient;
 use tonic::transport::Channel;
+use warp::{reject::Rejection, reply::Reply};
 
 mod todo {
     tonic::include_proto!("todo");
@@ -29,6 +30,19 @@ fn main() {
     println!("Hello, world!");
 }
 
+async fn get_todos_handler(state: AppState) -> Result<impl Reply, Rejection> {
+    let mut client = state.todo_client;
+    let request = tonic::Request::new(todo::Empty {});
+    let response = client.get_todos(request).await.map_err(|e| {
+        eprintln!("Error calling get_todos: {:?}", e);
+        warp::reject::not_found()
+    })?;
+
+    let todos = response.into_inner().todos;
+
+    Ok(warp::reply::html(render_todo_list(&todos)))
+}
+
 fn render_todo_list(todos: &[todo::Todo]) -> String {
     let mut html = String::new();
     for todo in todos {
@@ -53,12 +67,12 @@ fn render_todo_item(todo: &todo::Todo) -> String {
     "#,
         todo.id.unwrap_or(0),
         todo.id.unwrap_or(0),
-        todo.title,
         todo.id.unwrap_or(0),
         if todo.completed { "checked" } else { "" },
         if todo.completed { "completed" } else { "" },
         todo.title,
         todo.id.unwrap_or(0),
+        todo.title,
         todo.id.unwrap_or(0),
     )
 }
